@@ -1,0 +1,35 @@
+version: '2'
+services:
+  onlyoffice:
+    image: onlyoffice/documentserver:latest
+    container_name: onlyoffice
+    restart: always
+    volumes:
+      - /opt/docker/volumes/onlyoffice_data:/var/www/onlyoffice/Data
+      - /opt/docker/volumes/onlyoffice_rabbitmq:/var/lib/rabbitmq
+      - /opt/docker/volumes/onlyoffice_redis:/var/lib/redis
+      - /opt/docker/volumes/onlyoffice_log:/var/log/onlyoffice
+      - /opt/docker/volumes/onlyoffice_fonts:/usr/share/fonts/truetype/custom
+      - /opt/docker/volumes/onlyoffice_main:/var/lib/onlyoffice
+      - /opt/docker/volumes/onlyoffice_postgres:/var/lib/postgresql
+    networks:
+      - proxy
+    environment:
+      - JWT_ENABLED=true
+      - JWT_SECRET
+      - JWT_HEADER=Authorization
+      - JWT_IN_BODY=true
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=proxy"
+      - "traefik.http.routers.onlyoffice-secure.entrypoints=websecure"
+      - "traefik.http.routers.onlyoffice-secure.rule=Host(`onlyoffice.domain.tld`)"
+      - "traefik.http.routers.onlyoffice-secure.service=onlyoffice"
+      - "traefik.http.routers.onlyoffice-secure.middlewares=onlyoffice-headers"
+      - "traefik.http.services.onlyoffice.loadbalancer.server.port=80"
+      - "traefik.http.middlewares.onlyoffice-headers.headers.customrequestheaders.X-Forwarded-Proto=https"
+      - "traefik.http.middlewares.onlyoffice-headers.headers.accesscontrolalloworiginlist=*"
+      - "com.centurylinklabs.watchtower.enable=true"
+networks:
+  proxy:
+    external: true
